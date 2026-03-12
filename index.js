@@ -3,6 +3,19 @@ const fs = require('fs');
 const { createCanvas, loadImage } = require('canvas');
 const cloudinary = require('cloudinary').v2;
 require('dotenv').config();
+const express = require("express");
+
+const app = express();
+
+app.get("/", (req, res) => {
+    res.send("Bot de cotizaciones activo");
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log("Servidor escuchando en puerto", PORT);
+});
 
 axios.defaults.timeout = 10000;
 
