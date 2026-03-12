@@ -26,45 +26,72 @@ function delay(ms) {
 
 // Generar imagen con la cotización encima
 async function generarImagenDolar(cotizaciones) {
-    // cotizaciones = { blue_buy, blue_sell, oficial_buy, oficial_sell }
 
     const image = await loadImage(TEMPLATE_URL);
     const canvas = createCanvas(image.width, image.height);
     const ctx = canvas.getContext('2d');
 
-    // Dibujar plantilla
     ctx.drawImage(image, 0, 0, image.width, image.height);
 
-    const padding = 40;
+    const margin = 60;   // margen desde borde
+    const startX = margin;
+    let y = margin + 20;
 
-    // Título
-    ctx.font = 'bold 36px Arial';
-    ctx.fillStyle = 'white';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 4;
+    const fontTitle = 'bold 40px Arial';
+    const fontCurrency = 'bold 28px Arial';
+    const fontValues = '24px Arial';
 
-    const textTitle = 'Cotización Dólar';
-    const titleWidth = ctx.measureText(textTitle).width;
-    ctx.fillText(textTitle, image.width - titleWidth - padding, image.height - 180);
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 6;
 
-    // Configuración de valores (fuente un poco más grande para los números)
-    ctx.font = 'bold 36px Arial';
+    // TÍTULO
+    ctx.font = fontTitle;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText("COTIZACIONES", startX, y);
 
-    const lines = [
-        `Oficial: Compra $${cotizaciones.oficial_buy} / Venta $${cotizaciones.oficial_sell}`,
-        `Blue: Compra $${cotizaciones.blue_buy} / Venta $${cotizaciones.blue_sell}`
+    y += 60;
+
+    const monedas = [
+        { nombre: "DÓLAR OFICIAL", buy: cotizaciones.oficial_buy, sell: cotizaciones.oficial_sell },
+        { nombre: "DÓLAR BLUE", buy: cotizaciones.blue_buy, sell: cotizaciones.blue_sell },
+        { nombre: "EURO OFICIAL", buy: cotizaciones.euro_oficial_buy, sell: cotizaciones.euro_oficial_sell },
+        { nombre: "EURO BLUE", buy: cotizaciones.euro_blue_buy, sell: cotizaciones.euro_blue_sell },
+        { nombre: "REAL", buy: cotizaciones.real_buy, sell: cotizaciones.real_sell }
     ];
 
-    // Escribir cada línea con un margen vertical
-    lines.forEach((line, i) => {
-        const lineWidth = ctx.measureText(line).width;
-        ctx.fillText(line, image.width - lineWidth - padding, image.height - 120 + i * 50);
+    monedas.forEach((moneda) => {
+
+        ctx.font = fontCurrency;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(moneda.nombre, startX, y);
+
+        y += 30;
+
+        ctx.font = fontValues;
+        ctx.fillStyle = "#d1d5db";
+
+        ctx.fillText(`Compra  $${moneda.buy}`, startX, y);
+        y += 26;
+
+        ctx.fillText(`Venta   $${moneda.sell}`, startX, y);
+
+        y += 18;
+
+        // línea separadora
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.lineWidth = 1;
+        ctx.moveTo(startX, y);
+        ctx.lineTo(startX + 320, y);
+        ctx.stroke();
+
+        y += 34;
     });
 
-    // Guardar imagen
-    const buffer = canvas.toBuffer('image/png');
+    const buffer = canvas.toBuffer("image/png");
     fs.writeFileSync(OUTPUT_IMAGE, buffer);
-    console.log('✅ Imagen generada:', OUTPUT_IMAGE);
+
+    console.log("✅ Imagen generada:", OUTPUT_IMAGE);
 
     return OUTPUT_IMAGE;
 }
@@ -74,14 +101,34 @@ async function publicarInstagram() {
     try {
         // 1️⃣ Obtener cotización completa
         const res = await axios.get('https://api.bluelytics.com.ar/v2/latest');
+        const resBRL = await axios.get('https://economia.awesomeapi.com.br/json/last/BRL-ARS');
+
+        const real = resBRL.data.BRLARS;
+
+        const real_buy = parseFloat(real.bid).toFixed(2);
+        const real_sell = parseFloat(real.ask).toFixed(2);
+
         const dolarBlue = res.data.blue;
         const dolarOficial = res.data.oficial;
+
+        const euroBlue = res.data.blue_euro;
+        const euroOficial = res.data.oficial_euro;
 
         const cotizaciones = {
             blue_buy: dolarBlue.value_buy,
             blue_sell: dolarBlue.value_sell,
+
             oficial_buy: dolarOficial.value_buy,
-            oficial_sell: dolarOficial.value_sell
+            oficial_sell: dolarOficial.value_sell,
+
+            euro_blue_buy: euroBlue.value_buy,
+            euro_blue_sell: euroBlue.value_sell,
+
+            euro_oficial_buy: euroOficial.value_buy,
+            euro_oficial_sell: euroOficial.value_sell,
+
+            real_buy: real_buy,
+            real_sell: real_sell
         };
 
         console.log('💵 Cotizaciones obtenidas:', cotizaciones);
@@ -103,10 +150,18 @@ async function publicarInstagram() {
             {
                 params: {
                     image_url: IMAGE_URL,
-                    caption: `💵 Cotización del día:
-                    Dólar Blue: Compra $${cotizaciones.blue_buy} / Venta $${cotizaciones.blue_sell}
-                    Dólar Oficial: Compra $${cotizaciones.oficial_buy} / Venta $${cotizaciones.oficial_sell}
-                    #DolarBlue #DolarOficial #CotizacionDiaria #Argentina`,
+                    caption: `💵 Cotización del día
+
+                  Dólar Blue: Compra $${cotizaciones.blue_buy} / Venta $${cotizaciones.blue_sell}
+                  Dólar Oficial: Compra $${cotizaciones.oficial_buy} / Venta $${cotizaciones.oficial_sell}
+
+                  Euro Blue: Compra $${cotizaciones.euro_blue_buy} / Venta $${cotizaciones.euro_blue_sell}
+                  Euro Oficial: Compra $${cotizaciones.euro_oficial_buy} / Venta $${cotizaciones.euro_oficial_sell}
+
+                  Real: $${cotizaciones.real_buy} / $${cotizaciones.real_sell}
+
+                  #DolarBlue #EuroBlue #DolarHoy 
+                  #CotizacionArgentina`,
                     access_token: ACCESS_TOKEN
                 }
             }
