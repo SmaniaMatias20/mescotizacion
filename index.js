@@ -19,12 +19,12 @@ cloudinary.config({
     api_secret: API_SECRET
 });
 
-// Función para esperar X milisegundos
+// Esperar X milisegundos
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Generar imagen con la cotización encima
+// Generar imagen con la cotización
 async function generarImagenDolar(cotizaciones) {
 
     const image = await loadImage(TEMPLATE_URL);
@@ -33,7 +33,7 @@ async function generarImagenDolar(cotizaciones) {
 
     ctx.drawImage(image, 0, 0, image.width, image.height);
 
-    const margin = 60;   // margen desde borde
+    const margin = 60;
     const startX = margin;
     let y = margin + 20;
 
@@ -44,7 +44,6 @@ async function generarImagenDolar(cotizaciones) {
     ctx.shadowColor = 'rgba(0,0,0,0.4)';
     ctx.shadowBlur = 6;
 
-    // TÍTULO
     ctx.font = fontTitle;
     ctx.fillStyle = '#ffffff';
     ctx.fillText("COTIZACIONES", startX, y);
@@ -77,7 +76,6 @@ async function generarImagenDolar(cotizaciones) {
 
         y += 18;
 
-        // línea separadora
         ctx.beginPath();
         ctx.strokeStyle = "rgba(255,255,255,0.3)";
         ctx.lineWidth = 1;
@@ -98,8 +96,11 @@ async function generarImagenDolar(cotizaciones) {
 
 // Publicar en Instagram
 async function publicarInstagram() {
+
     try {
-        // 1️⃣ Obtener cotización completa
+
+        console.log("🚀 Iniciando publicación:", new Date().toLocaleString());
+
         const res = await axios.get('https://api.bluelytics.com.ar/v2/latest');
         const resBRL = await axios.get('https://economia.awesomeapi.com.br/json/last/BRL-ARS');
 
@@ -115,6 +116,7 @@ async function publicarInstagram() {
         const euroOficial = res.data.oficial_euro;
 
         const cotizaciones = {
+
             blue_buy: dolarBlue.value_buy,
             blue_sell: dolarBlue.value_sell,
 
@@ -133,17 +135,13 @@ async function publicarInstagram() {
 
         console.log('💵 Cotizaciones obtenidas:', cotizaciones);
 
-        // 2️⃣ Generar imagen con todas las cotizaciones
         const localImage = await generarImagenDolar(cotizaciones);
 
-        // El resto del código queda igual: subir a Cloudinary, crear media object, delay, publicar...
-
-        // 3️⃣ Subir a Cloudinary
         const uploadRes = await cloudinary.uploader.upload(localImage, { folder: 'dolar' });
         const IMAGE_URL = uploadRes.secure_url;
+
         console.log('✅ Imagen subida a Cloudinary:', IMAGE_URL);
 
-        // 4️⃣ Crear media object en Instagram
         const createMediaRes = await axios.post(
             `https://graph.instagram.com/v25.0/${IG_USER_ID}/media`,
             null,
@@ -158,32 +156,40 @@ async function publicarInstagram() {
                   Euro Blue: Compra $${cotizaciones.euro_blue_buy} / Venta $${cotizaciones.euro_blue_sell}
                   Euro Oficial: Compra $${cotizaciones.euro_oficial_buy} / Venta $${cotizaciones.euro_oficial_sell}
 
-                  Real: $${cotizaciones.real_buy} / $${cotizaciones.real_sell}
+                  Real: Compra $${cotizaciones.real_buy} / Venta $${cotizaciones.real_sell}
 
-                  #DolarBlue #EuroBlue #DolarHoy 
-                  #CotizacionArgentina`,
+                  #DolarBlue #EuroBlue #DolarHoy #CotizacionArgentina`,
                     access_token: ACCESS_TOKEN
                 }
             }
         );
 
         const mediaId = createMediaRes.data.id;
+
         console.log('✅ Media creado con ID:', mediaId);
 
-        // 5️⃣ Esperar a que el media object esté listo
         let status = 'IN_PROGRESS';
+
         while (status === 'IN_PROGRESS') {
+
             await delay(3000);
+
             const statusRes = await axios.get(`https://graph.instagram.com/${mediaId}`, {
-                params: { fields: 'status_code', access_token: ACCESS_TOKEN }
+                params: {
+                    fields: 'status_code',
+                    access_token: ACCESS_TOKEN
+                }
             });
+
             status = statusRes.data.status_code;
-            console.log('🔄 Estado del media:', status);
+
+            console.log('🔄 Estado media:', status);
         }
 
-        if (status !== 'FINISHED') throw new Error('El contenido multimedia no se procesó correctamente.');
+        if (status !== 'FINISHED') {
+            throw new Error('Media no se procesó correctamente');
+        }
 
-        // 6️⃣ Publicar
         const publishRes = await axios.post(
             `https://graph.instagram.com/v25.0/${IG_USER_ID}/media_publish`,
             null,
@@ -195,14 +201,31 @@ async function publicarInstagram() {
             }
         );
 
-        console.log('🚀 Publicado en Instagram!', publishRes.data);
+        console.log('🎉 Publicado en Instagram:', publishRes.data);
 
     } catch (err) {
-        if (err.response) console.error('❌ Error API:', err.response.data);
-        else if (err.request) console.error('❌ No se recibió respuesta:', err.message);
-        else console.error('❌ Error inesperado:', err.message);
+
+        if (err.response) {
+            console.error('❌ Error API:', err.response.data);
+        } else {
+            console.error('❌ Error:', err.message);
+        }
+
     }
 }
 
-// Ejecutar
-publicarInstagram();
+// LOOP CADA 24HS
+async function iniciarLoop() {
+
+    while (true) {
+
+        await publicarInstagram();
+
+        console.log("⏳ Esperando 24 horas para la próxima publicación...\n");
+
+        await delay(86400000); // 24 horas
+    }
+}
+
+// Ejecutar loop
+iniciarLoop();
