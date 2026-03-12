@@ -47,14 +47,20 @@ async function obtenerReal() {
     try {
 
         const res = await axios.get(
-            'https://economia.awesomeapi.com.br/json/last/BRL-ARS'
+            "https://open.er-api.com/v6/latest/BRL"
         );
 
-        const real = res.data.BRLARS;
+        console.log(res.data);
+
+        if (!res.data || !res.data.rates || !res.data.rates.ARS) {
+            throw new Error("No se pudo obtener BRL/ARS");
+        }
+
+        const ars = res.data.rates.ARS;
 
         return {
-            buy: parseFloat(real.bid).toFixed(2),
-            sell: parseFloat(real.ask).toFixed(2)
+            buy: (ars * 0.995).toFixed(2),
+            sell: (ars * 1.005).toFixed(2)
         };
 
     } catch (err) {
