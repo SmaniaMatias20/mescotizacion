@@ -223,6 +223,8 @@ Euro Oficial: Compra $${cotizaciones.euro_oficial_buy} / Venta $${cotizaciones.e
 
 Real: Compra $${cotizaciones.real_buy} / Venta $${cotizaciones.real_sell}
 
+🤖 Bot desarrollado por @mes.virtual
+
 #DolarBlue #EuroBlue #DolarHoy #CotizacionArgentina`,
                     access_token: ACCESS_TOKEN
                 }
