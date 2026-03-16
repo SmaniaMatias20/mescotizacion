@@ -23,3 +23,11 @@ jobs:
 
       - name: Ejecutar bot
         run: node index.js
+        env:
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          TEMPLATE_URL: ${{ secrets.TEMPLATE_URL }}
+          OUTPUT_IMAGE: ${{ secrets.OUTPUT_IMAGE }}
+          CLOUD_NAME: ${{ secrets.CLOUD_NAME }}
+          API_KEY: ${{ secrets.API_KEY }}
+          API_SECRET: ${{ secrets.API_SECRET }}
