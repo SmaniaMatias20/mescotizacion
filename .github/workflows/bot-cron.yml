@@ -1,4 +1,4 @@
-name: Bot Cotizaciones
+name: Bot Cotizaciones #Test
 
 on:
   schedule:
