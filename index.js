@@ -3,19 +3,6 @@ const fs = require('fs');
 const { createCanvas, loadImage } = require('canvas');
 const cloudinary = require('cloudinary').v2;
 require('dotenv').config();
-const express = require("express");
-
-const app = express();
-
-app.get("/", (req, res) => {
-    res.send("Bot de cotizaciones activo");
-});
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log("Servidor escuchando en puerto", PORT);
-});
 
 axios.defaults.timeout = 10000;
 
@@ -283,20 +270,14 @@ Real: Compra $${cotizaciones.real_buy} / Venta $${cotizaciones.real_sell}
     }
 }
 
-/* ============================
-   LOOP 24HS
-============================ */
+(async () => {
 
-async function iniciarLoop() {
+    console.log("🚀 Ejecutando bot:", new Date().toLocaleString());
 
-    while (true) {
+    await publicarInstagram();
 
-        await publicarInstagram();
+    console.log("✅ Bot finalizado");
 
-        console.log("⏳ Esperando 24 horas...\n");
+    process.exit(0);
 
-        await delay(86400000);
-    }
-}
-
-iniciarLoop();
+})();
