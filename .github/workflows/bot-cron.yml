@@ -2,8 +2,8 @@ name: Bot Cotizaciones
 
 on:
   schedule:
-    - cron: "*/5 * * * *"   # 9:00 Argentina
-  workflow_dispatch:       # permite ejecutarlo manualmente
+    - cron: "*/5 * * * *"   
+  workflow_dispatch:       
 
 jobs:
   run-bot:
